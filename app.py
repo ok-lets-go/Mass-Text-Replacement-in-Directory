@@ -107,28 +107,60 @@ class Window(tk.Tk):
     def replace_items(self):
         "Replace given string in selected files with replacement string"
         counter = 0
+        fail_count = 0
+        fail_text = ""
         for index in self.item_display.selection():
             item = self.replace_list[int(index)]
-            self.replace(item)
+            fail_val, file = self.replace(item)
+            fail_count += fail_val
+            if fail_val: 
+                fail_text += '\u2022 ' + file + '\n'
             counter += 1
-        notice.showinfo(title="Success", message=f"{counter} files renamed")
-
         self.table_frame.grid_forget()
+        if not fail_count: 
+            notice.showinfo(title="Success", message=f"{counter} file(s) renamed")
+        else: 
+            response = notice.askretrycancel(title="Error",  message=
+                            f"""{counter} files renamed\n 
+{fail_count} file(s) not accessible:
+{fail_text}                             
+            """)
+            if response:
+                self.replace_items()
 
     def replace_all(self):
         "Replace given string in all files with replacement string"
         self.find_items()
         counter = 0
+        fail_count = 0
+        fail_text = ""
         for item in self.replace_list:
-            self.replace(item)
+            fail_val, file = self.replace(item)
+            fail_count += fail_val
+            if fail_val: 
+                fail_text += '\u2022 ' + file + '\n'
             counter += 1
         self.table_frame.grid_forget()
-        notice.showinfo(title="Success", message=f"{counter} files renamed")
+        if not fail_count: 
+            notice.showinfo(title="Success", message=f"{counter} file(s) renamed")
+        else: 
+            response = notice.askretrycancel(title="Error",  message=
+                            f"""{counter} files renamed\n 
+{fail_count} file(s) not accessible:
+{fail_text}                             
+            """)
+            if response:
+                self.replace_all()
 
     def replace(self, item):
         """Actual replacement command"""
-        item.rename(f"{item.parent}\\{str(item.stem).replace(
+        try: 
+            item.rename(f"{item.parent}\\{str(item.stem).replace(
                     self.target_entry.get(), self.replacement_entry.get())}{item.suffix}")
+            return 0, None
+            
+        except PermissionError: 
+            return 1, f'{item.stem}.{item.suffix}'
 
     def display_items(self):
         "Display found items in window"
@@ -143,6 +175,10 @@ class Window(tk.Tk):
         self.item_display.pack()
 
 
-if __name__ == "__main__":
+def launch_app():
+    """allows app to be called by a separate module"""
     app = Window()
     app.mainloop()
+
+if __name__ == "__main__":
+    launch_app()

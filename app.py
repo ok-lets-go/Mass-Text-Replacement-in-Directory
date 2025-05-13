@@ -115,11 +115,12 @@ class Window(tk.Tk):
             fail_count += fail_val
             if fail_val: 
                 fail_text += '\u2022 ' + file + '\n'
+            if file == 'invalid': 
+                fail_text = 'invalid'
             counter += 1
         self.table_frame.grid_forget()
-        if not fail_count: 
-            notice.showinfo(title="Success", message=f"{counter} file(s) renamed")
-        else: 
+
+        if fail_count: 
             response = notice.askretrycancel(title="Error",  message=
                             f"""{counter} files renamed\n 
 {fail_count} file(s) not accessible:
@@ -127,6 +128,11 @@ class Window(tk.Tk):
             """)
             if response:
                 self.replace_items()
+        elif 'invalid' not in fail_text:
+            notice.showerror(title = "Error", message = 'Invalid replacement text selected, cannot contain \\/:*|<>"')
+        else: 
+            notice.showinfo(title="Success", message=f"{counter} file(s) renamed")
+
 
     def replace_all(self):
         "Replace given string in all files with replacement string"
@@ -139,18 +145,22 @@ class Window(tk.Tk):
             fail_count += fail_val
             if fail_val: 
                 fail_text += '\u2022 ' + file + '\n'
+            if file == 'invalid': 
+                fail_text = 'invalid'
             counter += 1
         self.table_frame.grid_forget()
-        if not fail_count: 
-            notice.showinfo(title="Success", message=f"{counter} file(s) renamed")
-        else: 
+        if fail_count: 
             response = notice.askretrycancel(title="Error",  message=
                             f"""{counter} files renamed\n 
 {fail_count} file(s) not accessible:
 {fail_text}                             
             """)
             if response:
-                self.replace_all()
+                self.replace_items()
+        elif 'invalid' in fail_text:
+            notice.showerror(title = "Error", message = 'Invalid replacement text selected, cannot contain \\/:*|<>"')
+        else: 
+            notice.showinfo(title="Success", message=f"{counter} file(s) renamed")
 
     def replace(self, item):
         """Actual replacement command"""
@@ -161,6 +171,11 @@ class Window(tk.Tk):
             
         except PermissionError: 
             return 1, f'{item.stem}.{item.suffix}'
+        
+        except FileNotFoundError: 
+            return 0, 'invalid'
+        except OSError:
+            return 0, 'invalid'
 
     def display_items(self):
         "Display found items in window"
